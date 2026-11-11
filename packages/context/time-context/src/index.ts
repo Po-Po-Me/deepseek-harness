@@ -219,7 +219,10 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     const browser = state.browserTurn === turn
       ? deriveBrowserTimeZoneContext(decision.messages, state.browserTimeZones)
       : deriveBrowserTimeZoneContext(requestMessages(agent, turn, decision.messages))
-    const selectedTimeZone = browser.kind === 'resolved' ? browser.timeZone : fallbackTimeZone
+    /* local patch: the injected clock follows the machine (VM) time zone, never the
+       browser-reported zone. The derivation above still validates reported zones. */
+    void browser
+    const selectedTimeZone = fallbackTimeZone
     const text = renderText(
       now,
       turn,
@@ -227,7 +230,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       previous,
       formatterFor(selectedTimeZone),
       selectedTimeZone,
-      browser,
+      { kind: 'resolved', timeZone: selectedTimeZone },
     )
     return {
       ...decision,
